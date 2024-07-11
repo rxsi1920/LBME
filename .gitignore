@@ -1,0 +1,10 @@
+# OS-generated files/directories
+**/.DS_Store
+**/Thumbs.db
+
+# IDE-generated files/directories
+**/.vscode/
+**/.idea
+
+# Build directories
+build/
