@@ -7,6 +7,8 @@ project(lbme LANGUAGES C CXX)
 
 find_package(Curses REQUIRED)
 set(CURSES_USE_NCURSES TRUE)
+set(GIT_VERSION "$(shell git describe --abbrev=4 --dirty --always --tags)")
+set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-DVERSION=\"$(GIT_VERSION)\"")
 
 include_directories(cmake/)
 add_subdirectory(src/)
