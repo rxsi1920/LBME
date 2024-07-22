@@ -1,6 +1,8 @@
+#include "app_info.h"
 #include "pages.h"
 #include "screen.h"
 #include "battery.h"
+#include "util.h"
 
 #include <malloc.h>
 #include <math.h>
@@ -9,17 +11,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#define HOME_LEN 3
-#define SETTINGS_LEN 3
-#define PG_BROWSER_LEN 3
-
 static char *home_menu[] = {"Help", "Setup", "Quit"};
 static char *home_menu_keys[] = {"F1", "F2", "F10"};
 
-static char *settings_page[] = {"General", "Themes", "About"};
+static char *settings_tabs[] = {"General", "Themes", "About"};
 
-static char *page_browser[] = {"Next Selection", "Depth", "Enter"};
-static char *page_browser_keys[] = {"^/⌄", "</>", "Check/Uncheck/Select"};
+static char *page_browser[] = {"Next Category", "Depth", "Check/Uncheck/Select", "Exit", "Save"};
+static char *page_browser_keys[] = {"^/⌄", "</>", "Enter", "F10", "F12"};
+
+int setup_selection = 0;
+
+WINDOW *active_windows[10];
 
 static struct winsize dim;
 static struct battery_status *status;
@@ -32,139 +34,251 @@ void get_fn()
 
 void setup_pages()
 {
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
-
-    status = (struct battery_status *)malloc(sizeof(battery_status));
-    scrape_battery_info(status);
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+  status = (struct battery_status *)malloc(sizeof(battery_status));
+  scrape_battery_info(status);
 }
 
 void clean_pages()
 {
-    free(status);
+  free(status);
+}
+
+void refresh_screen()
+{
+  // for(int i=0; i < get_length2(active_windows); i++)
+  // {
+  //   delwin(active_windows[i]);
+  // }
+  endwin();
+  erase();
+  // memset(active_windows, 0, sizeof active_windows);
 }
 
 void draw_help_page()
 {
-    WINDOW *menuwin = newwin(6, 12, 8, 5);
-    box(menuwin, 0, 0);
-    wrefresh(menuwin);
 }
 
 void draw_battery_info()
 {
+  scrape_battery_info(status);
+  WINDOW *device_inf = newwin(1, dim.ws_col - 1, 0, 0);
+  keypad(device_inf, TRUE);
+  wrefresh(device_inf);
 
-    scrape_battery_info(status);
-    WINDOW *inf_ = newwin(4, dim.ws_col - 1, 0, 0);
-    keypad(inf_, TRUE);
-    wrefresh(inf_);
+  WINDOW *stat_inf = newwin(1, dim.ws_col - 1, 1, 0);
+  keypad(stat_inf, TRUE);
+  wrefresh(stat_inf);
 
-    wattrset(inf_, COLOR_PAIR(2));
-    wprintw(inf_, "DEVICE: ");
-    wattrset(inf_, COLOR_PAIR(0));
-    wprintw(inf_, "%s ", status->name);
+  wattrset(device_inf, COLOR_PAIR(2));
+  wprintw(device_inf, "DEVICE: ");
+  wattrset(device_inf, COLOR_PAIR(0));
+  wprintw(device_inf, "%s ", status->name);
 
-    wattrset(inf_, COLOR_PAIR(2));
-    wprintw(inf_, "MANUFACTURER: ");
-    wattrset(inf_, COLOR_PAIR(0));
-    wprintw(inf_, "%s ", status->manufacturer);
+  wattrset(device_inf, COLOR_PAIR(2));
+  wprintw(device_inf, "MANUFACTURER: ");
+  wattrset(device_inf, COLOR_PAIR(0));
+  wprintw(device_inf, "%s ", status->manufacturer);
 
-    wattrset(inf_, COLOR_PAIR(2));
-    wprintw(inf_, "MODEL: ");
-    wattrset(inf_, COLOR_PAIR(0));
-    wprintw(inf_, "%s ", status->model_name);
+  wattrset(device_inf, COLOR_PAIR(2));
+  wprintw(device_inf, "MODEL: ");
+  wattrset(device_inf, COLOR_PAIR(0));
+  wprintw(device_inf, "%s ", status->model_name);
 
-    wattrset(inf_, COLOR_PAIR(2));
-    wprintw(inf_, "STATE: ");
-    if (strcmp(status->state, "FULL") == 0)
-        wattrset(inf_, COLOR_PAIR(3));
-    else if (strcmp(status->state, "DISCHARGING") == 0)
-        wattrset(inf_, COLOR_PAIR(4));
-    else if (strcmp(status->state, "CHARGING") == 0)
-        wattrset(inf_, COLOR_PAIR(6));
-    else
-        wattrset(inf_, COLOR_PAIR(0));
-    // else if (strcmp(status->state, "FULL") == 0)
-    wprintw(inf_, "%s ", status->state);
+  wattrset(stat_inf, COLOR_PAIR(2));
+  wprintw(stat_inf, "STATE: ");
+  if (strcmp(status->state, "FULL") == 0)
+    wattrset(stat_inf, COLOR_PAIR(3));
+  else if (strcmp(status->state, "DISCHARGING") == 0)
+    wattrset(stat_inf, COLOR_PAIR(4));
+  else if (strcmp(status->state, "CHARGING") == 0)
+    wattrset(stat_inf, COLOR_PAIR(6));
+  else
+    wattrset(stat_inf, COLOR_PAIR(0));
+  // else if (strcmp(status->state, "FULL") == 0)
+  wprintw(stat_inf, "%s ", status->state);
 
-    wattrset(inf_, COLOR_PAIR(2));
-    wprintw(inf_, "CHARGE: ");
-    wattrset(inf_, COLOR_PAIR(0));
-    wprintw(inf_, "[");
+  wattrset(stat_inf, COLOR_PAIR(2));
+  wprintw(stat_inf, "CHARGE: ");
+  wattrset(stat_inf, COLOR_PAIR(0));
+  wprintw(stat_inf, "[");
 
-    int bars = floor(status->battery / 5);
-    bars -= bars % 20;
-    int rem_bars = 20 - bars;
+  int bars = floor(status->battery / 5);
+  bars -= bars % 20;
+  int rem_bars = 20 - bars;
 
-    if (bars >= 15)
-        wattrset(inf_, COLOR_PAIR(3));
-    else if (bars >= 12)
-        wattrset(inf_, COLOR_PAIR(2));
-    else if (bars >= 8)
-        wattrset(inf_, COLOR_PAIR(4));
-    else if (bars >= 0)
-        wattrset(inf_, COLOR_PAIR(5));
+  if (bars >= 15)
+    wattrset(stat_inf, COLOR_PAIR(3));
+  else if (bars >= 12)
+    wattrset(stat_inf, COLOR_PAIR(2));
+  else if (bars >= 8)
+    wattrset(stat_inf, COLOR_PAIR(4));
+  else if (bars >= 0)
+    wattrset(stat_inf, COLOR_PAIR(5));
 
-    for (int i = 0; i < bars; i++)
-        wprintw(inf_, "❙");
-    wattrset(inf_, COLOR_PAIR(0));
-    for (int i = 0; i < rem_bars; i++)
-        wprintw(inf_, " ");
-    wprintw(inf_, "]");
+  for (int i = 0; i < bars; i++)
+    wprintw(stat_inf, "❙");
+  wattrset(stat_inf, COLOR_PAIR(0));
+  for (int i = 0; i < rem_bars; i++)
+    wprintw(stat_inf, " ");
+  wprintw(stat_inf, "]");
 
-    wrefresh(inf_);
+  wrefresh(device_inf);
+  wrefresh(stat_inf);
+  doupdate();
 }
 
 void draw_page_keymap(char *menu[], char *keys[], int len)
 {
-    struct winsize dim;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+  struct winsize dim;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
 
-    WINDOW *keymap = newwin(1, dim.ws_col - 1, dim.ws_row - 1, 0);
-    keypad(keymap, TRUE);
-    wrefresh(keymap);
+  WINDOW *keymap = newwin(1, dim.ws_col - 1, dim.ws_row - 1, 0);
+  keypad(keymap, TRUE);
+  wrefresh(keymap);
 
-    for (int i = 0; i < len; i++)
-    {
-        wattrset(keymap, COLOR_PAIR(0));
-        wprintw(keymap, "%s", keys[i]);
-        wattrset(keymap, A_STANDOUT | COLOR_PAIR(1));
-        wprintw(keymap, "%-7s", menu[i]);
-    }
-    unsigned short x, y;
-    getyx(keymap, y, x);
-    mvwchgat(keymap, 0, x, -1, A_STANDOUT, 1, NULL);
-    refresh();
-    unsigned short key = wgetch(keymap);
-    switch (key)
-    {
-    case 27: // Escape key
-    case 'q':
-    case 'Q':
-    case KEY_F(10):
-        close_screen();
-        break;
-    case KEY_F(1):
-    case 'h':
-        break;
-    case KEY_F(2):
-        break;
-    case KEY_F(12):
-        break;
-    default:
-        break;
-    }
-
-    wrefresh(keymap);
+  for (int i = 0; i < len; i++)
+  {
+    wattrset(keymap, COLOR_PAIR(0));
+    wprintw(keymap, "%s", keys[i]);
+    wattrset(keymap, A_STANDOUT | COLOR_PAIR(1));
+    wprintw(keymap, "%-6s ", menu[i]);
+  }
+  unsigned short x, y;
+  getyx(keymap, y, x);
+  mvwchgat(keymap, 0, x, -1, A_STANDOUT, 1, NULL);
+  refresh();
+  wrefresh(keymap);
 }
 
 void draw_home_page()
 {
-    refresh();
-    draw_battery_info();
-    draw_page_keymap(home_menu, home_menu_keys, HOME_LEN);
+  refresh();
+  draw_page_keymap(home_menu, home_menu_keys, HOME_LEN);
+  WINDOW *menubar = newwin(0, 12, 23, 4);
+  unsigned short key = wgetch(menubar);
+  switch (key)
+  {
+  case 27: // Escape key
+  case 'q':
+  case 'Q':
+  case KEY_F(10):
+    close_screen();
+    break;
+  case KEY_F(1):
+  case 'h':
+    break;
+  case KEY_F(2):
+    break;
+  case KEY_F(12):
+    break;
+  default:
+    break;
+  }
+  wrefresh(menubar);
 }
 
 void draw_settings_page()
 {
-    draw_page_keymap(page_browser, page_browser_keys, PG_BROWSER_LEN);
+  WINDOW *menu = newwin(6, 24, 3, 0);
+  keypad(menu, TRUE);
+  wattrset(menu, A_STANDOUT | COLOR_PAIR(6));
+  mvwprintw(menu, 0, 0, " %-18s", "Setup Categories");
+  wattrset(menu, COLOR_PAIR(0));
+  for (int i = 0; i < SETTINGS_LEN; i++)
+  {
+    if (setup_selection == i)
+    {
+      wattrset(menu, A_STANDOUT | COLOR_PAIR(4));
+      mvwprintw(menu, i + 1, 0, " %-18s", settings_tabs[i]);
+      wattrset(menu, COLOR_PAIR(0));
+    }
+    else
+    {
+      mvwprintw(menu, i + 1, 0, " %-18s", settings_tabs[i]);
+    }
+  }
+  wrefresh(menu);
+  switch (setup_selection)
+  {
+  case 0:
+    show_general_settings();
+    break;
+  case 1:
+    show_theme_settings();
+    break;
+  case 2:
+    show_about_tab();
+    break;
+  }
+  draw_page_keymap(page_browser, page_browser_keys, PG_BROWSER_LEN);
+  unsigned short key = wgetch(menu);
+  switch (key)
+  {
+  case KEY_RESIZE:
+    refresh_screen();
+    break;
+  case 27: // Escape key
+  case KEY_F(10):
+
+    break;
+  case 'q':
+  case 'Q':
+    close_screen();
+    break;
+  case KEY_F(1):
+  case 'h':
+    break;
+  case KEY_F(2):
+    break;
+  case KEY_F(12):
+    break;
+  case KEY_UP:
+    if (setup_selection > 0)
+      setup_selection--;
+    refresh_screen();
+    break;
+  case KEY_DOWN:
+    if (setup_selection < SETTINGS_LEN - 1)
+      setup_selection++;
+    refresh_screen();
+    break;
+  case KEY_LEFT:
+    break;
+  case KEY_RIGHT:
+    break;
+  default:
+    break;
+  }
+  refresh();
+}
+
+void draw_tab_header(char *header)
+{
+  WINDOW *general_tab_header = newwin(1, dim.ws_col - 20, 3, 20);
+  wattrset(general_tab_header, A_STANDOUT | COLOR_PAIR(6));
+  mvwprintw(general_tab_header, 0, 0, " %-200s", header);
+  wattrset(general_tab_header, COLOR_PAIR(0));
+  wrefresh(general_tab_header);
+}
+
+void show_general_settings()
+{
+  draw_tab_header("General");
+}
+
+void show_theme_settings()
+{
+  draw_tab_header("Themes");
+}
+
+void show_about_tab()
+{
+  draw_tab_header("About");
+  WINDOW *content = newwin(dim.ws_row - 1, dim.ws_col - 21, 4, 21);
+  mvwprintw(content, 0, 0, "%s",
+            "\nLBMe Version: " LBME_VERSION " (2024)\n"
+            "\nCheck out the Github project here: https://github.com/rxsi1920/LBME \n"
+            "Created by Preran Apinakoppa.");
+  wrefresh(content);
 }

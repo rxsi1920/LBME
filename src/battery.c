@@ -10,53 +10,57 @@
 
 void place_split_value(char *tok, char *split, char *place)
 {
-    capitalize(tok = strtok(NULL, split));
-    tok[strlen(tok) - 1] = 0;
-    if (tok[0] == '\0')
-        tok = "UNKNOWN";
-    sprintf(place, "%s", tok);
+  capitalize(tok = strtok(NULL, split));
+  tok[strlen(tok) - 1] = 0;
+  if (tok[0] == '\0')
+    tok = "UNKNOWN";
+  sprintf(place, "%s", tok);
 }
 
 void scrape_battery_info(battery_status *status)
 {
-    FILE *fptr;
-    if ((fptr = fopen(READ_SRC, "r")) != NULL)
+  FILE *fptr;
+  if ((fptr = fopen(READ_SRC, "r")) != NULL)
+  {
+    char line[1024];
+    char *split = "=";
+    char *token;
+    unsigned short filled;
+    unsigned short full;
+    while (fgets(line, sizeof(line), fptr))
     {
-        char line[1024];
-        char *split = "=";
-        char *token;
-        unsigned short filled;
-        unsigned short full;
-        while (fgets(line, sizeof(line), fptr))
-        {
-            token = strtok(line, split);
-            if (strcmp(token, "POWER_SUPPLY_NAME") == 0)
-                place_split_value(token, split, status->name);
-            else if (strcmp(token, "POWER_SUPPLY_STATUS") == 0)
-                place_split_value(token, split, status->state);
-            else if (strcmp(token, "POWER_SUPPLY_MODEL_NAME") == 0)
-                place_split_value(token, split, status->model_name);
-            else if (strcmp(token, "POWER_SUPPLY_ENERGY_FULL") == 0)
-            {
-                token = strtok(NULL, split);
-                token[strlen(token) - 1] = 0;
-                if (token[0] == '\0') token = 0;
-                full = (unsigned short)atoi(token);
-            }
-            else if (strcmp(token, "POWER_SUPPLY_ENERGY_NOW") == 0)
-            {
-                token = strtok(NULL, split);
-                token[strlen(token) - 1] = 0;
-                if (token[0] == '\0') token = 0;
-                filled = (unsigned short)atoi(token);
-                if (full == 0) status->battery = 0;
-                else status->battery = (unsigned short)floor(filled * 100/ full);
-            }
-            else if (strcmp(token, "POWER_SUPPLY_MANUFACTURER") == 0)
-                place_split_value(token, split, status->manufacturer);
-        }
-        fclose(fptr);
+      token = strtok(line, split);
+      if (strcmp(token, "POWER_SUPPLY_NAME") == 0)
+        place_split_value(token, split, status->name);
+      else if (strcmp(token, "POWER_SUPPLY_STATUS") == 0)
+        place_split_value(token, split, status->state);
+      else if (strcmp(token, "POWER_SUPPLY_MODEL_NAME") == 0)
+        place_split_value(token, split, status->model_name);
+      else if (strcmp(token, "POWER_SUPPLY_ENERGY_FULL") == 0)
+      {
+        token = strtok(NULL, split);
+        token[strlen(token) - 1] = 0;
+        if (token[0] == '\0')
+          token = 0;
+        full = (unsigned short)atoi(token);
+      }
+      else if (strcmp(token, "POWER_SUPPLY_ENERGY_NOW") == 0)
+      {
+        token = strtok(NULL, split);
+        token[strlen(token) - 1] = 0;
+        if (token[0] == '\0')
+          token = 0;
+        filled = (unsigned short)atoi(token);
+        if (full == 0)
+          status->battery = 0;
+        else
+          status->battery = (unsigned short)floor(filled * 100 / full);
+      }
+      else if (strcmp(token, "POWER_SUPPLY_MANUFACTURER") == 0)
+        place_split_value(token, split, status->manufacturer);
     }
+    fclose(fptr);
+  }
 }
 
 void update_status()

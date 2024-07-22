@@ -6,7 +6,6 @@
 #include "screen.h"
 
 int run(int argc, char **argv);
-void handle_keypress(int key);
 int parse_args(int argc, char **argv);
 void print_help_table();
 void print_usage(int argc, char **argv);
