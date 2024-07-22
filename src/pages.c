@@ -22,6 +22,7 @@ static char *page_browser_keys[] = {"↕", "↔", "Enter", "F10", "F12"};
 int setup_selection = 0;
 
 WINDOW *active_windows[10];
+bool settings_open = false;
 
 static struct winsize dim;
 static struct battery_status *status;
@@ -128,7 +129,7 @@ void draw_battery_info()
   doupdate();
 }
 
-void draw_page_keymap(char *menu[], char *keys[], int len)
+WINDOW *draw_page_keymap(char *menu[], char *keys[], int len)
 {
   struct winsize dim;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
@@ -149,16 +150,19 @@ void draw_page_keymap(char *menu[], char *keys[], int len)
   mvwchgat(keymap, 0, x, -1, A_STANDOUT, 1, NULL);
   refresh();
   wrefresh(keymap);
+
+  return keymap;
 }
 
 void draw_home_page()
 {
-  refresh();
-  draw_page_keymap(home_menu, home_menu_keys, HOME_LEN);
-  WINDOW *menubar = newwin(0, 12, 23, 4);
-  unsigned short key = wgetch(menubar);
+  WINDOW *menu = draw_page_keymap(home_menu, home_menu_keys, HOME_LEN);
+  unsigned short key = wgetch(menu);
   switch (key)
   {
+  case KEY_RESIZE:
+    refresh_screen();
+    break;
   case 27: // Escape key
   case 'q':
   case 'Q':
@@ -169,13 +173,15 @@ void draw_home_page()
   case 'h':
     break;
   case KEY_F(2):
+    settings_open = true;
     break;
   case KEY_F(12):
     break;
   default:
     break;
   }
-  wrefresh(menubar);
+  wrefresh(menu);
+  refresh();
 }
 
 void draw_settings_page()
@@ -194,9 +200,7 @@ void draw_settings_page()
       wattrset(menu, COLOR_PAIR(0));
     }
     else
-    {
       mvwprintw(menu, i + 1, 0, " %-18s", settings_tabs[i]);
-    }
   }
   wrefresh(menu);
   switch (setup_selection)
@@ -219,8 +223,10 @@ void draw_settings_page()
     refresh_screen();
     break;
   case 27: // Escape key
+  case KEY_F(2):
   case KEY_F(10):
-
+    settings_open = false;
+    refresh_screen();
     break;
   case 'q':
   case 'Q':
@@ -228,8 +234,6 @@ void draw_settings_page()
     break;
   case KEY_F(1):
   case 'h':
-    break;
-  case KEY_F(2):
     break;
   case KEY_F(12):
     break;
@@ -255,10 +259,13 @@ void draw_settings_page()
 
 void draw_tab_header(char *header)
 {
-  WINDOW *general_tab_header = newwin(1, dim.ws_col - 20, 3, 20);
+  WINDOW *general_tab_header = newwin(1, dim.ws_col, 3, 20);
   wattrset(general_tab_header, A_STANDOUT | COLOR_PAIR(6));
-  mvwprintw(general_tab_header, 0, 0, " %-200s", header);
+  mvwprintw(general_tab_header, 0, 0, " %-30s", header);
   wattrset(general_tab_header, COLOR_PAIR(0));
+  unsigned short x, y;
+  getyx(general_tab_header, y, x);
+  mvwchgat(general_tab_header, 0, x, -1, A_STANDOUT, 6, NULL);
   wrefresh(general_tab_header);
 }
 
@@ -279,6 +286,6 @@ void show_about_tab()
   mvwprintw(content, 0, 0, "%s",
             "\nLBMe Version: " LBME_VERSION " (2024)\n"
             "\nCheck out the Github project here: https://github.com/rxsi1920/LBME \n"
-            "Created by Preran Apinakoppa.");
+            "Created by Preran Apinakoppa. Inspired by Nvtop and Htop.");
   wrefresh(content);
 }

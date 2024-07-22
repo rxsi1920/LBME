@@ -14,6 +14,7 @@ int make_screen()
   cbreak();
   refresh();
   curs_set(0);
+  set_escdelay(0);
   keypad(stdscr, 1);
 
   // Enable coloring

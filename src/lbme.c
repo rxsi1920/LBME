@@ -24,7 +24,10 @@ int run(int argc, char **argv)
   while (prog_cms != -1)
   {
     draw_battery_info();
-    draw_settings_page();
+    if (settings_open)
+      draw_settings_page();
+    else
+      draw_home_page();
   }
   close_screen();
 }
