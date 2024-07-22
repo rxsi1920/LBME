@@ -5,6 +5,7 @@
 // #define READ_SRC "/proc/acpi/battery/"
 // #define READ_SRC "/sys/class/power_supply/%s/uevent"
 #define READ_SRC "/sys/class/power_supply/BAT1/uevent"
+#define READ_UPTIME_SRC "/proc/uptime"
 // #elif __APPLE__
 // #define READ_SRC "/proc/acpi/battery/"
 // #elif _WIN64
@@ -27,7 +28,9 @@ typedef enum battery_state
 typedef struct battery_status
 {
   unsigned short battery;
-  long uptime;
+  long uptime_h;
+  int uptime_m;
+  int uptime_s;
   // factory_info man_inf;
   char name[32];
   char manufacturer[32];

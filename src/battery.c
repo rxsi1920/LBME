@@ -61,6 +61,19 @@ void scrape_battery_info(battery_status *status)
     }
     fclose(fptr);
   }
+
+  if ((fptr = fopen(READ_UPTIME_SRC, "r")) != NULL)
+  {
+    char line[64];
+    char *token;
+    char *split = " ";
+    fgets(line, sizeof line, fptr);
+    token = strtok(line, split);
+    long int uptime = ceil(atof(token));
+    status->uptime_h = uptime / 3600;
+    status->uptime_m = (uptime % 3600) / 60;
+    status->uptime_s = uptime % 60;
+  }
 }
 
 void update_status()

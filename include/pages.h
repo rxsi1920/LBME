@@ -3,7 +3,7 @@
 
 #include <ncurses.h>
 
-#define HOME_LEN 3
+#define HOME_LEN 5
 #define SETTINGS_LEN 3
 #define PG_BROWSER_LEN 5
 

@@ -11,8 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 
-static char *home_menu[] = {"Help", "Setup", "Quit"};
-static char *home_menu_keys[] = {"F1", "F2", "F10"};
+static char *home_menu[] = {"Help", "Setup", "Toggle Graph", "Quit", "About"};
+static char *home_menu_keys[] = {"F1", "F2", "F8", "F10", "F12"};
 
 static char *settings_tabs[] = {"General", "Themes", "About"};
 
@@ -84,7 +84,12 @@ void draw_battery_info()
   wattrset(device_inf, COLOR_PAIR(2));
   wprintw(device_inf, "MODEL: ");
   wattrset(device_inf, COLOR_PAIR(0));
-  wprintw(device_inf, "%s ", status->model_name);
+  wprintw(device_inf, "%.15s", status->model_name);
+  wprintw(device_inf, "%.15s", status->model_name);
+
+  if (sizeof(status->model_name) > 15)
+    wprintw(device_inf, "...");
+  wprintw(device_inf, " ");
 
   wattrset(stat_inf, COLOR_PAIR(2));
   wprintw(stat_inf, "STATE: ");
@@ -97,7 +102,7 @@ void draw_battery_info()
   else
     wattrset(stat_inf, COLOR_PAIR(0));
   // else if (strcmp(status->state, "FULL") == 0)
-  wprintw(stat_inf, "%s ", status->state);
+  wprintw(stat_inf, "%-11s ", status->state);
 
   wattrset(stat_inf, COLOR_PAIR(2));
   wprintw(stat_inf, "CHARGE: ");
@@ -123,6 +128,13 @@ void draw_battery_info()
   for (int i = 0; i < rem_bars; i++)
     wprintw(stat_inf, " ");
   wprintw(stat_inf, "]");
+
+  wprintw(stat_inf, "%4d%% ", status->battery);
+
+  wattrset(stat_inf, COLOR_PAIR(2));
+  wprintw(stat_inf, "UPTIME: ");
+  wattrset(stat_inf, COLOR_PAIR(0));
+  wprintw(stat_inf, "%4ld:%02d:%02d", status->uptime_h, status->uptime_m, status->uptime_s);
 
   wrefresh(device_inf);
   wrefresh(stat_inf);
@@ -176,6 +188,8 @@ void draw_home_page()
     settings_open = true;
     break;
   case KEY_F(12):
+    settings_open = true;
+    setup_selection = 2;
     break;
   default:
     break;
