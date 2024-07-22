@@ -17,7 +17,7 @@ static char *home_menu_keys[] = {"F1", "F2", "F10"};
 static char *settings_tabs[] = {"General", "Themes", "About"};
 
 static char *page_browser[] = {"Next Category", "Depth", "Check/Uncheck/Select", "Exit", "Save"};
-static char *page_browser_keys[] = {"^/⌄", "</>", "Enter", "F10", "F12"};
+static char *page_browser_keys[] = {"↕", "↔", "Enter", "F10", "F12"};
 
 int setup_selection = 0;
 
