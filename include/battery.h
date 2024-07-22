@@ -12,18 +12,21 @@
 // #define READ_SRC "/proc/acpi/battery/"
 #endif
 
-typedef enum battery_state
-{
-  AC_CHARGING,
-  AC_CHARGED,
-  AC_ON_BATTERY,
-  AC_INVALID,
-} battery_state;
-
-// typedef const struct factory_info
+// typedef enum battery_state
 // {
+//   AC_CHARGING,
+//   AC_CHARGED,
+//   AC_ON_BATTERY,
+//   AC_INVALID,
+// } battery_state;
 
-// } factory_info;
+typedef const struct factory_info
+{
+  const char name[32];
+  const char manufacturer[32];
+  const char model_name[32];
+  const char serial_no[32];
+} factory_info;
 
 typedef struct battery_status
 {
@@ -31,15 +34,12 @@ typedef struct battery_status
   long uptime_h;
   int uptime_m;
   int uptime_s;
-  // factory_info man_inf;
-  char name[32];
-  char manufacturer[32];
-  char model_name[32];
-  char serial_no[32];
+  factory_info man_inf;
   // battery_state state;
   char state[32];
 } battery_status;
 
+void scrape_battery_man_info(battery_status *status);
 void scrape_battery_info(battery_status *status);
 void update_status();
 

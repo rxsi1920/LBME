@@ -8,13 +8,37 @@
 #include <string.h>
 #include <unistd.h>
 
-void place_split_value(char *tok, char *split, char *place)
+void place_split_value(char *tok, char *split, const char *place)
 {
   capitalize(tok = strtok(NULL, split));
   tok[strlen(tok) - 1] = 0;
   if (tok[0] == '\0')
     tok = "UNKNOWN";
-  sprintf(place, "%s", tok);
+  sprintf((char*)place, "%s", tok);
+}
+
+void scrape_battery_man_info(battery_status *status)
+{
+  FILE *fptr;
+  if ((fptr = fopen(READ_SRC, "r")) != NULL)
+  {
+    char line[1024];
+    char *split = "=";
+    char *token;
+    unsigned short filled;
+    unsigned short full;
+    while (fgets(line, sizeof(line), fptr))
+    {
+      token = strtok(line, split);
+      if (strcmp(token, "POWER_SUPPLY_NAME") == 0)
+        place_split_value(token, split, status->man_inf.name);
+      else if (strcmp(token, "POWER_SUPPLY_MODEL_NAME") == 0)
+        place_split_value(token, split, status->man_inf.model_name);
+      else if (strcmp(token, "POWER_SUPPLY_MANUFACTURER") == 0)
+        place_split_value(token, split, status->man_inf.manufacturer);
+    }
+    fclose(fptr);
+  }  
 }
 
 void scrape_battery_info(battery_status *status)
@@ -30,12 +54,8 @@ void scrape_battery_info(battery_status *status)
     while (fgets(line, sizeof(line), fptr))
     {
       token = strtok(line, split);
-      if (strcmp(token, "POWER_SUPPLY_NAME") == 0)
-        place_split_value(token, split, status->name);
-      else if (strcmp(token, "POWER_SUPPLY_STATUS") == 0)
+      if (strcmp(token, "POWER_SUPPLY_STATUS") == 0)
         place_split_value(token, split, status->state);
-      else if (strcmp(token, "POWER_SUPPLY_MODEL_NAME") == 0)
-        place_split_value(token, split, status->model_name);
       else if (strcmp(token, "POWER_SUPPLY_ENERGY_FULL") == 0)
       {
         token = strtok(NULL, split);
@@ -56,8 +76,6 @@ void scrape_battery_info(battery_status *status)
         else
           status->battery = (unsigned short)floor(filled * 100 / full);
       }
-      else if (strcmp(token, "POWER_SUPPLY_MANUFACTURER") == 0)
-        place_split_value(token, split, status->manufacturer);
     }
     fclose(fptr);
   }

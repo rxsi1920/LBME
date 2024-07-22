@@ -24,6 +24,9 @@ int setup_selection = 0;
 WINDOW *active_windows[10];
 bool settings_open = false;
 
+WINDOW *device_inf;
+WINDOW *settings_screen;
+
 static struct winsize dim;
 static struct battery_status *status;
 
@@ -36,8 +39,12 @@ void get_fn()
 void setup_pages()
 {
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+  device_inf = newwin(1, dim.ws_col - 1, 0, 0);
+  // nodelay(device_inf, TRUE);
+  settings_screen = newwin(6, 24, 3, 0);
+  nodelay(settings_screen, TRUE);
   status = (struct battery_status *)malloc(sizeof(battery_status));
-  scrape_battery_info(status);
+  scrape_battery_man_info(status);
 }
 
 void clean_pages()
@@ -63,7 +70,7 @@ void draw_help_page()
 void draw_battery_info()
 {
   scrape_battery_info(status);
-  WINDOW *device_inf = newwin(1, dim.ws_col - 1, 0, 0);
+  wclear(device_inf);
   keypad(device_inf, TRUE);
   wrefresh(device_inf);
 
@@ -74,20 +81,20 @@ void draw_battery_info()
   wattrset(device_inf, COLOR_PAIR(2));
   wprintw(device_inf, "DEVICE: ");
   wattrset(device_inf, COLOR_PAIR(0));
-  wprintw(device_inf, "%s ", status->name);
+  wprintw(device_inf, "%s ", status->man_inf.name);
 
   wattrset(device_inf, COLOR_PAIR(2));
   wprintw(device_inf, "MANUFACTURER: ");
   wattrset(device_inf, COLOR_PAIR(0));
-  wprintw(device_inf, "%s ", status->manufacturer);
+  wprintw(device_inf, "%s ", status->man_inf.manufacturer);
 
   wattrset(device_inf, COLOR_PAIR(2));
   wprintw(device_inf, "MODEL: ");
   wattrset(device_inf, COLOR_PAIR(0));
-  wprintw(device_inf, "%.15s", status->model_name);
-  wprintw(device_inf, "%.15s", status->model_name);
+  wprintw(device_inf, "%.15s", status->man_inf.model_name);
+  wprintw(device_inf, "%.15s", status->man_inf.model_name);
 
-  if (sizeof(status->model_name) > 15)
+  if (sizeof(status->man_inf.model_name) > 15)
     wprintw(device_inf, "...");
   wprintw(device_inf, " ");
 
@@ -200,23 +207,23 @@ void draw_home_page()
 
 void draw_settings_page()
 {
-  WINDOW *menu = newwin(6, 24, 3, 0);
-  keypad(menu, TRUE);
-  wattrset(menu, A_STANDOUT | COLOR_PAIR(6));
-  mvwprintw(menu, 0, 0, " %-18s", "Setup Categories");
-  wattrset(menu, COLOR_PAIR(0));
+  
+  keypad(settings_screen, TRUE);
+  wattrset(settings_screen, A_STANDOUT | COLOR_PAIR(6));
+  mvwprintw(settings_screen, 0, 0, " %-18s", "Setup Categories");
+  wattrset(settings_screen, COLOR_PAIR(0));
   for (int i = 0; i < SETTINGS_LEN; i++)
   {
     if (setup_selection == i)
     {
-      wattrset(menu, A_STANDOUT | COLOR_PAIR(4));
-      mvwprintw(menu, i + 1, 0, " %-18s", settings_tabs[i]);
-      wattrset(menu, COLOR_PAIR(0));
+      wattrset(settings_screen, A_STANDOUT | COLOR_PAIR(4));
+      mvwprintw(settings_screen, i + 1, 0, " %-18s", settings_tabs[i]);
+      wattrset(settings_screen, COLOR_PAIR(0));
     }
     else
-      mvwprintw(menu, i + 1, 0, " %-18s", settings_tabs[i]);
+      mvwprintw(settings_screen, i + 1, 0, " %-18s", settings_tabs[i]);
   }
-  wrefresh(menu);
+  wrefresh(settings_screen);
   switch (setup_selection)
   {
   case 0:
@@ -230,7 +237,7 @@ void draw_settings_page()
     break;
   }
   draw_page_keymap(page_browser, page_browser_keys, PG_BROWSER_LEN);
-  unsigned short key = wgetch(menu);
+  unsigned short key = wgetch(settings_screen);
   switch (key)
   {
   case KEY_RESIZE:
