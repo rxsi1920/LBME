@@ -24,7 +24,7 @@ int run(int argc, char **argv)
   make_screen();
   while (prog_cms != -1)
   {
-    usleep(10000);
+    usleep(30000);
     // sleep(1);
     draw_battery_info();
     // draw_settings_page();
