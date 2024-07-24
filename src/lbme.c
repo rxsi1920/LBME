@@ -27,6 +27,7 @@ int run(int argc, char **argv)
     usleep(10000);
     // sleep(1);
     draw_battery_info();
+    // draw_settings_page();
     if (settings_open)
       draw_settings_page();
     else

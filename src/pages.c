@@ -22,7 +22,7 @@ static char *page_browser_keys[] = {"↕", "↔", "Enter", "F10", "F12"};
 // WINDOW *active_windows[10];
 
 int setup_selection = 0;
-bool settings_open = false;
+bool settings_open = FALSE;
 
 WINDOW *device_inf;
 WINDOW *settings_screen;
@@ -53,7 +53,8 @@ void setup_pages()
   nodelay(settings_screen, TRUE);
   general_tab_header = newwin(1, dim.ws_col, 3, 20);
   nodelay(general_tab_header, TRUE);
-  content = newwin(dim.ws_row - 1, dim.ws_col - 21, 4, 21);
+  content = newwin(dim.ws_row - 5, dim.ws_col - 21, 4, 21);
+  nodelay (content, TRUE);
 }
 
 void clean_pages()
@@ -217,6 +218,8 @@ void draw_home_page()
 void draw_settings_page()
 {
   // keypad(settings_screen, TRUE);
+  WINDOW *menu = draw_page_keymap(page_browser, page_browser_keys, PG_BROWSER_LEN);
+  nodelay (menu, TRUE);
   wclear(settings_screen);
   wattrset(settings_screen, A_STANDOUT | COLOR_PAIR(6));
   mvwprintw(settings_screen, 0, 0, " %-18s", "Setup Categories");
@@ -232,6 +235,7 @@ void draw_settings_page()
     else
       mvwprintw(settings_screen, i + 1, 0, " %-18s", settings_tabs[i]);
   }
+  
   wrefresh(settings_screen);
   switch (setup_selection)
   {
@@ -245,8 +249,7 @@ void draw_settings_page()
     show_about_tab();
     break;
   }
-  draw_page_keymap(page_browser, page_browser_keys, PG_BROWSER_LEN);
-  unsigned short key = wgetch(settings_screen);
+  unsigned short key = wgetch(menu);
   switch (key)
   {
   case KEY_RESIZE:
@@ -256,7 +259,6 @@ void draw_settings_page()
   case KEY_F(2):
   case KEY_F(10):
     settings_open = false;
-    refresh_screen();
     break;
   case 'q':
   case 'Q':
@@ -270,12 +272,10 @@ void draw_settings_page()
   case KEY_UP:
     if (setup_selection > 0)
       setup_selection--;
-    refresh_screen();
     break;
   case KEY_DOWN:
     if (setup_selection < SETTINGS_LEN - 1)
       setup_selection++;
-    refresh_screen();
     break;
   case KEY_LEFT:
     // settings_s
@@ -285,7 +285,6 @@ void draw_settings_page()
   default:
     break;
   }
-  refresh();
 }
 
 void draw_tab_header(char *header)
@@ -303,11 +302,15 @@ void draw_tab_header(char *header)
 void show_general_settings()
 {
   draw_tab_header("General");
+  wclear(content);
+  wrefresh(content);
 }
 
 void show_theme_settings()
 {
   draw_tab_header("Themes");
+  wclear(content);
+  wrefresh(content);
 }
 
 void show_about_tab()
