@@ -19,13 +19,17 @@ static char *settings_tabs[] = {"General", "Themes", "About"};
 static char *page_browser[] = {"Next Category", "Depth", "Check/Uncheck/Select", "Exit", "Save"};
 static char *page_browser_keys[] = {"↕", "↔", "Enter", "F10", "F12"};
 
-int setup_selection = 0;
+// WINDOW *active_windows[10];
 
-WINDOW *active_windows[10];
+int setup_selection = 0;
 bool settings_open = false;
 
 WINDOW *device_inf;
 WINDOW *settings_screen;
+WINDOW *general_tab_header;
+WINDOW *content;
+
+// controls
 
 static struct winsize dim;
 static struct battery_status *status;
@@ -38,13 +42,18 @@ void get_fn()
 
 void setup_pages()
 {
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
-  device_inf = newwin(1, dim.ws_col - 1, 0, 0);
-  // nodelay(device_inf, TRUE);
-  settings_screen = newwin(6, 24, 3, 0);
-  nodelay(settings_screen, TRUE);
   status = (struct battery_status *)malloc(sizeof(battery_status));
   scrape_battery_man_info(status);
+
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &dim);
+
+  device_inf = newwin(1, dim.ws_col - 1, 0, 0);
+  nodelay(device_inf, TRUE);
+  settings_screen = newwin(6, 24, 3, 0);
+  nodelay(settings_screen, TRUE);
+  general_tab_header = newwin(1, dim.ws_col, 3, 20);
+  nodelay(general_tab_header, TRUE);
+  content = newwin(dim.ws_row - 1, dim.ws_col - 21, 4, 21);
 }
 
 void clean_pages()
@@ -91,10 +100,9 @@ void draw_battery_info()
   wattrset(device_inf, COLOR_PAIR(2));
   wprintw(device_inf, "MODEL: ");
   wattrset(device_inf, COLOR_PAIR(0));
-  wprintw(device_inf, "%.15s", status->man_inf.model_name);
-  wprintw(device_inf, "%.15s", status->man_inf.model_name);
+  wprintw(device_inf, "%.17s", status->man_inf.model_name);
 
-  if (sizeof(status->man_inf.model_name) > 15)
+  if (sizeof(status->man_inf.model_name) > 18)
     wprintw(device_inf, "...");
   wprintw(device_inf, " ");
 
@@ -176,6 +184,7 @@ WINDOW *draw_page_keymap(char *menu[], char *keys[], int len)
 void draw_home_page()
 {
   WINDOW *menu = draw_page_keymap(home_menu, home_menu_keys, HOME_LEN);
+  nodelay(menu, TRUE);
   unsigned short key = wgetch(menu);
   switch (key)
   {
@@ -207,8 +216,8 @@ void draw_home_page()
 
 void draw_settings_page()
 {
-  
-  keypad(settings_screen, TRUE);
+  // keypad(settings_screen, TRUE);
+  wclear(settings_screen);
   wattrset(settings_screen, A_STANDOUT | COLOR_PAIR(6));
   mvwprintw(settings_screen, 0, 0, " %-18s", "Setup Categories");
   wattrset(settings_screen, COLOR_PAIR(0));
@@ -269,6 +278,7 @@ void draw_settings_page()
     refresh_screen();
     break;
   case KEY_LEFT:
+    // settings_s
     break;
   case KEY_RIGHT:
     break;
@@ -280,7 +290,7 @@ void draw_settings_page()
 
 void draw_tab_header(char *header)
 {
-  WINDOW *general_tab_header = newwin(1, dim.ws_col, 3, 20);
+  wclear(general_tab_header);
   wattrset(general_tab_header, A_STANDOUT | COLOR_PAIR(6));
   mvwprintw(general_tab_header, 0, 0, " %-30s", header);
   wattrset(general_tab_header, COLOR_PAIR(0));
@@ -303,7 +313,7 @@ void show_theme_settings()
 void show_about_tab()
 {
   draw_tab_header("About");
-  WINDOW *content = newwin(dim.ws_row - 1, dim.ws_col - 21, 4, 21);
+  wclear(content);
   mvwprintw(content, 0, 0, "%s",
             "\nLBMe Version: " LBME_VERSION " (2024)\n"
             "\nCheck out the Github project here: https://github.com/rxsi1920/LBME \n"

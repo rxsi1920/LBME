@@ -12,14 +12,6 @@
 // #define READ_SRC "/proc/acpi/battery/"
 #endif
 
-// typedef enum battery_state
-// {
-//   AC_CHARGING,
-//   AC_CHARGED,
-//   AC_ON_BATTERY,
-//   AC_INVALID,
-// } battery_state;
-
 typedef const struct factory_info
 {
   const char name[32];

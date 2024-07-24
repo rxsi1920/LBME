@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 volatile sig_atomic_t prog_cms = 0;
 
@@ -23,6 +24,8 @@ int run(int argc, char **argv)
   make_screen();
   while (prog_cms != -1)
   {
+    usleep(10000);
+    // sleep(1);
     draw_battery_info();
     if (settings_open)
       draw_settings_page();
