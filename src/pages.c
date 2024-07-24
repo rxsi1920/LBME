@@ -203,10 +203,12 @@ void draw_home_page()
     break;
   case KEY_F(2):
     settings_open = true;
+    refresh_screen();
     break;
   case KEY_F(12):
     settings_open = true;
     setup_selection = 2;
+    refresh_screen();
     break;
   default:
     break;
@@ -259,6 +261,7 @@ void draw_settings_page()
   case KEY_F(2):
   case KEY_F(10):
     settings_open = false;
+    refresh_screen();
     break;
   case 'q':
   case 'Q':
